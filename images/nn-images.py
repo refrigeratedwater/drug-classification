@@ -51,31 +51,53 @@ data = {
 
 
 # Function to plot confusion matrix and classification report
-def plot_results(name, cm, report):
-    fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+def plot_all_confusion_matrices(data):
+    num_drugs = len(data)
+    num_rows = -(-num_drugs // 3)  # Ceiling division to get the number of rows
+    fig, axes = plt.subplots(num_rows, 3, figsize=(12, 4 * num_rows), constrained_layout=True)
+    axes = axes.flatten()  # Flatten the axes array for easy indexing
 
-    # Plotting confusion matrix
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax[0])
-    ax[0].set_title(f'Confusion Matrix for {name}')
-    ax[0].set_xlabel('Predicted labels')
-    ax[0].set_ylabel('True labels')
-    ax[0].xaxis.set_ticklabels(['Non-User', 'User'])
-    ax[0].yaxis.set_ticklabels(['Non-User', 'User'])
+    for i, (drug, values) in enumerate(data.items()):
+        sns.heatmap(values["confusion_matrix"], annot=True, fmt='d', cmap='Blues', ax=axes[i])
+        axes[i].set_title(drug)
+        axes[i].set_xlabel('Predicted')
+        axes[i].set_ylabel('True')
+        axes[i].xaxis.set_ticklabels(['Non-User', 'User'])
+        axes[i].yaxis.set_ticklabels(['Non-User', 'User'])
 
-    # Plotting classification report
-    metrics = ['precision', 'recall', 'f1-score', 'accuracy']
-    categories = ['Non-User', 'User']
-    for metric in metrics:
-        for i, category in enumerate(categories):
-            ax[1].bar(metric, report[metric][i], label=f'{category} ({metric[0].upper()})', alpha=0.5)
-    ax[1].set_title(f'Classification Report for {name}')
-    ax[1].set_ylabel('Scores')
-    ax[1].set_ylim([0, 1])
-    ax[1].legend()
+    # Hide any unused subplots
+    for j in range(i + 1, num_rows * 3):
+        axes[j].axis('off')
 
-    plt.tight_layout()
     plt.show()
 
-# Plotting for each drug
-for drug, values in data.items():
-    plot_results(drug, values["confusion_matrix"], values["classification_report"])
+# Function to plot all classification reports in a 1 by 3 format
+def plot_all_classification_reports(data):
+    num_drugs = len(data)
+    num_rows = -(-num_drugs // 3)  # Ceiling division to get the number of rows
+    fig, axes = plt.subplots(num_rows, 3, figsize=(12, 4 * num_rows), constrained_layout=True)
+    axes = axes.flatten()  # Flatten the axes array for easy indexing
+
+    for i, (drug, values) in enumerate(data.items()):
+        if i < num_rows * 3 - 1:  # Ensure we don't plot on the last subplot
+            report = values["classification_report"]
+            metrics = ['precision', 'recall', 'f1-score']
+            for metric in metrics:
+                axes[i].bar(metric, report[metric][0], alpha=0.8)
+                axes[i].bar(metric, report[metric][1], alpha=0.8)
+            axes[i].bar('accuracy', report['accuracy'], color='green')
+            axes[i].set_title(drug)
+            axes[i].set_ylim([0, 1])
+            axes[i].legend(['Non-User', 'User', 'Accuracy'], loc='lower right')
+        else:
+            break 
+
+    # Hide any unused subplots before the last one
+    for j in range(i, num_rows * 3 - 1):
+        axes[j].axis('off')
+
+    plt.show()
+
+# Plotting all confusion matrices and classification reports
+plot_all_confusion_matrices(data)
+plot_all_classification_reports(data)
